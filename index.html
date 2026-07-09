@@ -103,23 +103,6 @@
             color: gold;
         }
 
-        .btn-critic {
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 30px;
-            color: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-
-        .btn-critic:hover {
-            background: rgba(255, 100, 100, 0.1);
-            border-color: #ff6b6b;
-            color: #ff6b6b;
-        }
-
         .main-content {
             margin: 20px 0;
         }
@@ -273,7 +256,7 @@
             font-weight: 700;
             letter-spacing: 4px;
             color: #00ccff;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
             padding: 8px 20px;
             border-radius: 12px;
             font-family: monospace;
@@ -370,76 +353,6 @@
             font-size: 11px;
         }
 
-        .critic-area {
-            display: none;
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .critic-area.show {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .critic-area textarea {
-            width: 100%;
-            padding: 14px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            color: white;
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            resize: vertical;
-            min-height: 100px;
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .critic-area textarea:focus {
-            border-color: #ff6b6b;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.1);
-        }
-
-        .critic-area .critic-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 12px;
-            justify-content: flex-end;
-        }
-
-        .critic-area .btn-send-critic {
-            padding: 10px 24px;
-            background: linear-gradient(135deg, #ff6b6b, #ff2d55);
-            border: none;
-            border-radius: 30px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .critic-area .btn-send-critic:hover {
-            transform: scale(0.96);
-        }
-
-        .critic-area .btn-cancel-critic {
-            padding: 10px 24px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 30px;
-            color: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .critic-area .btn-cancel-critic:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
         .toast {
             position: fixed;
             bottom: 20px;
@@ -464,11 +377,6 @@
         @keyframes toastFade {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .close-upload-btn {
@@ -527,7 +435,6 @@
     <div class="header">
         <h1>VideoSWebs</h1>
         <div class="header-right">
-            <button class="btn-critic" id="criticBtn"><i class="fas fa-comment"></i> Kritik</button>
             <button class="btn-dev" id="devBtn"><i class="fas fa-code"></i> Dev</button>
             <button class="btn-upload" id="uploadBtn"><i class="fas fa-upload"></i> Upload Video!</button>
         </div>
@@ -579,15 +486,6 @@
             <div class="dev-title"><i class="fas fa-crown"></i> Developer Mode — All Uploads</div>
             <div id="devList"></div>
         </div>
-
-        <!-- Critic Area -->
-        <div id="criticArea" class="critic-area">
-            <textarea id="criticInput" placeholder="Write your criticism so the developer knows!"></textarea>
-            <div class="critic-actions">
-                <button class="btn-cancel-critic" id="cancelCriticBtn">Cancel</button>
-                <button class="btn-send-critic" id="sendCriticBtn"><i class="fas fa-paper-plane"></i> Send</button>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -596,7 +494,6 @@
 <script>
     const STORAGE_KEY = 'videys_uploads';
     const DEV_CODE = 'ZetsuDeveloper001IndonesianWebsiteDeployer';
-    const OWNER_ID = '8246027862';
     const BOT_TOKEN = '8627394983:AAFPZR6Elkjf70Ck331gCFZhDjp2Cr_itVk';
     let uploads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     let isDevMode = false;
@@ -670,41 +567,67 @@
         showToast('✅ Loaded: ' + code);
     }
 
-    function handleFile(file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const dataUrl = event.target.result;
-            const code = generateCode();
-            currentUploadCode = code;
-            uploads[code] = dataUrl;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
+    async function uploadToTelegram(file) {
+        const formData = new FormData();
+        formData.append('document', file);
 
-            const preview = document.getElementById('previewContainer');
-            if (file.type.startsWith('video/')) {
-                preview.innerHTML = `<video controls src="${dataUrl}"></video>`;
-            } else if (file.type.startsWith('image/')) {
-                preview.innerHTML = `<img src="${dataUrl}" alt="Uploaded image">`;
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument?chat_id=8246027862`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        if (result.ok && result.result.document) {
+            const fileId = result.result.document.file_id;
+            const fileResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+            const fileData = await fileResponse.json();
+            if (fileData.ok) {
+                const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+                return fileUrl;
             }
+        }
+        return null;
+    }
 
-            document.getElementById('uploadArea').classList.remove('show');
-            document.getElementById('uploadResult').classList.add('show');
-            document.getElementById('resultCode').textContent = code;
+    async function handleFile(file) {
+        const toast = document.getElementById('toast');
+        toast.textContent = '⏳ Uploading to Telegram...';
+        toast.classList.add('show');
 
-            document.getElementById('copyCodeBtn').onclick = function() {
-                navigator.clipboard.writeText(code).then(() => {
-                    showToast('✅ Code copied! Share it with your friends.');
-                }).catch(() => {
-                    showToast('📋 Code: ' + code);
-                });
-            };
+        const fileUrl = await uploadToTelegram(file);
+        if (!fileUrl) {
+            toast.textContent = '❌ Upload failed. Try again.';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+            return;
+        }
 
-            showToast('✅ Upload successful! Code: ' + code);
+        const code = generateCode();
+        currentUploadCode = code;
+        uploads[code] = fileUrl;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
 
-            if (isDevMode) renderDevPanel();
+        const preview = document.getElementById('previewContainer');
+        if (file.type.startsWith('video/')) {
+            preview.innerHTML = `<video controls src="${fileUrl}"></video>`;
+        } else if (file.type.startsWith('image/')) {
+            preview.innerHTML = `<img src="${fileUrl}" alt="Uploaded image">`;
+        }
+
+        document.getElementById('uploadArea').classList.remove('show');
+        document.getElementById('uploadResult').classList.add('show');
+        document.getElementById('resultCode').textContent = code;
+
+        document.getElementById('copyCodeBtn').onclick = function() {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('✅ Code copied! Share it with your friends.');
+            }).catch(() => {
+                showToast('📋 Code: ' + code);
+            });
         };
-        reader.readAsDataURL(file);
-        // Reset input biar bisa upload ulang file yg sama
-        document.getElementById('fileInput').value = '';
+
+        showToast('✅ Upload successful! Code: ' + code);
+
+        if (isDevMode) renderDevPanel();
     }
 
     // Upload button → trigger file input
@@ -713,8 +636,6 @@
         document.getElementById('uploadArea').classList.add('show');
         document.getElementById('uploadResult').classList.remove('show');
         document.getElementById('viewerArea').classList.remove('show');
-        // Reset input setiap kali buka
-        document.getElementById('fileInput').value = '';
         document.getElementById('fileInput').click();
     });
 
@@ -723,6 +644,7 @@
         const file = this.files[0];
         if (!file) return;
         handleFile(file);
+        this.value = '';
     });
 
     // Cancel upload
@@ -731,7 +653,6 @@
         document.getElementById('welcomeView').style.display = 'block';
         document.getElementById('previewContainer').innerHTML = '';
         document.getElementById('fileInput').value = '';
-        document.getElementById('uploadResult').classList.remove('show');
     });
 
     // View button
@@ -771,55 +692,6 @@
             showToast('✅ Developer mode activated!');
         } else if (input !== null) {
             showToast('❌ Invalid developer code.');
-        }
-    });
-
-    // Critic button
-    document.getElementById('criticBtn').addEventListener('click', function() {
-        const area = document.getElementById('criticArea');
-        area.classList.toggle('show');
-        if (area.classList.contains('show')) {
-            document.getElementById('criticInput').focus();
-        }
-    });
-
-    // Cancel critic
-    document.getElementById('cancelCriticBtn').addEventListener('click', function() {
-        document.getElementById('criticArea').classList.remove('show');
-        document.getElementById('criticInput').value = '';
-    });
-
-    // Send critic via Telegram
-    document.getElementById('sendCriticBtn').addEventListener('click', async function() {
-        const msg = document.getElementById('criticInput').value.trim();
-        if (!msg) {
-            showToast('❌ Please write something first!');
-            return;
-        }
-
-        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        const payload = {
-            chat_id: OWNER_ID,
-            text: `📩 *VideoSWebs Critic*\n\n${msg}`,
-            parse_mode: 'Markdown'
-        };
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (result.ok) {
-                showToast('✅ Criticism sent! Thank you.');
-                document.getElementById('criticArea').classList.remove('show');
-                document.getElementById('criticInput').value = '';
-            } else {
-                showToast('❌ Failed to send. Try again later.');
-            }
-        } catch (e) {
-            showToast('❌ Error sending criticism.');
         }
     });
 
@@ -863,7 +735,7 @@
         this.value = '';
     });
 
-    // Drag and drop (desktop)
+    // Drag and drop
     const uploadArea = document.getElementById('uploadArea');
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
