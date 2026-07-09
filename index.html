@@ -486,6 +486,30 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        .export-import-area {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .export-import-btn {
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .export-import-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
         @media (max-width: 480px) {
             .container { padding: 24px 16px; }
             .header h1 { font-size: 22px; }
@@ -517,6 +541,11 @@
             <div class="code-input-area">
                 <input type="text" id="codeInput" placeholder="Enter the code here to view the video!">
                 <button id="viewBtn"><i class="fas fa-play"></i> View</button>
+            </div>
+            <div class="export-import-area">
+                <button class="export-import-btn" id="exportBtn"><i class="fas fa-download"></i> Export Data</button>
+                <button class="export-import-btn" id="importBtn"><i class="fas fa-upload"></i> Import Data</button>
+                <input type="file" id="importFile" accept=".json" style="display:none;">
             </div>
         </div>
 
@@ -788,6 +817,46 @@
         } catch (e) {
             showToast('❌ Error sending criticism.');
         }
+    });
+
+    // Export / Import
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        const data = JSON.stringify(uploads, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'VideoSWebs_Backup.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('✅ Data exported!');
+    });
+
+    document.getElementById('importBtn').addEventListener('click', function() {
+        document.getElementById('importFile').click();
+    });
+
+    document.getElementById('importFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                if (typeof importedData === 'object' && importedData !== null) {
+                    uploads = importedData;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
+                    if (isDevMode) renderDevPanel();
+                    showToast('✅ Data imported successfully!');
+                } else {
+                    showToast('❌ Invalid data format.');
+                }
+            } catch (err) {
+                showToast('❌ Error importing data.');
+            }
+        };
+        reader.readAsText(file);
+        this.value = '';
     });
 
     // Drag and drop
