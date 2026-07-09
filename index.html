@@ -651,4 +651,165 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
 
             const preview = document.getElementById('previewContainer');
-            if (file.type.startsWith('vi
+            if (file.type.startsWith('video/')) {
+                preview.innerHTML = `<video controls src="${dataUrl}"></video>`;
+            } else if (file.type.startsWith('image/')) {
+                preview.innerHTML = `<img src="${dataUrl}" alt="Uploaded image">`;
+            }
+
+            document.getElementById('uploadArea').classList.remove('show');
+            document.getElementById('uploadResult').classList.add('show');
+            document.getElementById('resultCode').textContent = code;
+
+            document.getElementById('copyCodeBtn').onclick = function() {
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast('✅ Code copied! Share it with your friends.');
+                }).catch(() => {
+                    showToast('📋 Code: ' + code);
+                });
+            };
+
+            showToast('✅ Upload successful! Code: ' + code);
+
+            if (isDevMode) renderDevPanel();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Upload button → trigger file input
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        document.getElementById('welcomeView').style.display = 'none';
+        document.getElementById('uploadArea').classList.add('show');
+        document.getElementById('uploadResult').classList.remove('show');
+        document.getElementById('viewerArea').classList.remove('show');
+        document.getElementById('fileInput').click();
+    });
+
+    // File input change
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = this.files[0];
+        if (!file) return;
+        handleFile(file);
+        this.value = '';
+    });
+
+    // Cancel upload
+    document.getElementById('closeUploadBtn').addEventListener('click', () => {
+        document.getElementById('uploadArea').classList.remove('show');
+        document.getElementById('welcomeView').style.display = 'block';
+        document.getElementById('previewContainer').innerHTML = '';
+        document.getElementById('fileInput').value = '';
+    });
+
+    // View button
+    document.getElementById('viewBtn').addEventListener('click', function() {
+        const code = document.getElementById('codeInput').value.trim().toUpperCase();
+        if (!code) {
+            showToast('❌ Please enter a code!');
+            return;
+        }
+        viewByCode(code);
+        document.getElementById('codeInput').value = '';
+    });
+
+    // Enter key on input
+    document.getElementById('codeInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('viewBtn').click();
+        }
+    });
+
+    // Dev button — check code via prompt
+    document.getElementById('devBtn').addEventListener('click', function() {
+        if (isDevMode) {
+            isDevMode = false;
+            this.classList.remove('active');
+            document.getElementById('devPanel').classList.remove('show');
+            showToast('🔒 Developer mode disabled.');
+            return;
+        }
+
+        const input = prompt('Enter developer code:');
+        if (input === DEV_CODE) {
+            isDevMode = true;
+            this.classList.add('active');
+            document.getElementById('devPanel').classList.add('show');
+            renderDevPanel();
+            showToast('✅ Developer mode activated!');
+        } else if (input !== null) {
+            showToast('❌ Invalid developer code.');
+        }
+    });
+
+    // Critic button
+    document.getElementById('criticBtn').addEventListener('click', function() {
+        const area = document.getElementById('criticArea');
+        area.classList.toggle('show');
+        if (area.classList.contains('show')) {
+            document.getElementById('criticInput').focus();
+        }
+    });
+
+    // Cancel critic
+    document.getElementById('cancelCriticBtn').addEventListener('click', function() {
+        document.getElementById('criticArea').classList.remove('show');
+        document.getElementById('criticInput').value = '';
+    });
+
+    // Send critic via Telegram
+    document.getElementById('sendCriticBtn').addEventListener('click', async function() {
+        const msg = document.getElementById('criticInput').value.trim();
+        if (!msg) {
+            showToast('❌ Please write something first!');
+            return;
+        }
+
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+        const payload = {
+            chat_id: OWNER_ID,
+            text: `📩 *VideoSWebs Critic*\n\n${msg}`,
+            parse_mode: 'Markdown'
+        };
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.ok) {
+                showToast('✅ Criticism sent! Thank you.');
+                document.getElementById('criticArea').classList.remove('show');
+                document.getElementById('criticInput').value = '';
+            } else {
+                showToast('❌ Failed to send. Try again later.');
+            }
+        } catch (e) {
+            showToast('❌ Error sending criticism.');
+        }
+    });
+
+    // Drag and drop
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+</script>
+</body>
+</html>
