@@ -144,6 +144,7 @@
 <script>
     const STORAGE_KEY = 'videys_uploads';
     const DEV_CODE = 'ZetsuDeveloper001IndonesianWebsiteDeployer';
+    const BOT_TOKEN = '8627394983:AAFPZR6Elkjf70Ck331gCFZhDjp2Cr_itVk';
     let uploads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     let isDevMode = false;
     let currentUploadCode = '';
@@ -216,56 +217,115 @@
         showToast('✅ Loaded: ' + code);
     }
 
-    function handleFile(file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const dataUrl = event.target.result;
-            const code = generateCode();
-            currentUploadCode = code;
-            uploads[code] = dataUrl;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
+    // ======= UPLOAD VIA TELEGRAM =======
+    async function uploadToTelegram(file) {
+        const formData = new FormData();
+        formData.append('document', file);
 
-            const preview = document.getElementById('previewContainer');
-            if (file.type.startsWith('video/')) {
-                preview.innerHTML = `<video controls src="${dataUrl}"></video>`;
-            } else if (file.type.startsWith('image/')) {
-                preview.innerHTML = `<img src="${dataUrl}" alt="Uploaded image">`;
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument?chat_id=8246027862`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        if (result.ok && result.result.document) {
+            const fileId = result.result.document.file_id;
+            const fileResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+            const fileData = await fileResponse.json();
+            if (fileData.ok) {
+                const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+                return fileUrl;
             }
-
-            document.getElementById('uploadArea').classList.remove('show');
-            document.getElementById('uploadResult').classList.add('show');
-            document.getElementById('resultCode').textContent = code;
-
-            document.getElementById('copyCodeBtn').onclick = function() {
-                navigator.clipboard.writeText(code).then(() => {
-                    showToast('✅ Code copied! Share it with your friends.');
-                }).catch(() => {
-                    showToast('📋 Code: ' + code);
-                });
-            };
-
-            showToast('✅ Upload successful! Code: ' + code);
-
-            if (isDevMode) renderDevPanel();
-        };
-        reader.readAsDataURL(file);
+        }
+        return null;
     }
 
-    // Upload button → trigger file input
+    async function handleFileUpload(file, method = 'browser') {
+        let fileUrl;
+
+        if (method === 'telegram') {
+            showToast('⏳ Uploading via Telegram...');
+            fileUrl = await uploadToTelegram(file);
+            if (!fileUrl) {
+                showToast('❌ Telegram upload failed. Try browser method.');
+                return;
+            }
+        } else {
+            // Browser method (base64)
+            const reader = new FileReader();
+            fileUrl = await new Promise((resolve) => {
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const code = generateCode();
+        currentUploadCode = code;
+        uploads[code] = fileUrl;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
+
+        const preview = document.getElementById('previewContainer');
+        if (file.type.startsWith('video/')) {
+            preview.innerHTML = `<video controls src="${fileUrl}"></video>`;
+        } else if (file.type.startsWith('image/')) {
+            preview.innerHTML = `<img src="${fileUrl}" alt="Uploaded image">`;
+        }
+
+        document.getElementById('uploadArea').classList.remove('show');
+        document.getElementById('uploadResult').classList.add('show');
+        document.getElementById('resultCode').textContent = code;
+
+        document.getElementById('copyCodeBtn').onclick = function() {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('✅ Code copied! Share it with your friends.');
+            }).catch(() => {
+                showToast('📋 Code: ' + code);
+            });
+        };
+
+        showToast(`✅ Upload successful! Code: ${code} (${method === 'telegram' ? 'via Telegram' : 'via Browser'})`);
+
+        if (isDevMode) renderDevPanel();
+    }
+
+    // Upload button → show options
     document.getElementById('uploadBtn').addEventListener('click', () => {
         document.getElementById('welcomeView').style.display = 'none';
         document.getElementById('uploadArea').classList.add('show');
         document.getElementById('uploadResult').classList.remove('show');
         document.getElementById('viewerArea').classList.remove('show');
-        document.getElementById('fileInput').click();
+
+        // Add method selection
+        const uploadText = document.querySelector('.upload-text');
+        uploadText.innerHTML = `
+            Choose upload method:
+            <br><br>
+            <button onclick="document.getElementById('fileInput').click();" style="padding:10px 20px; background: #00ccff; border: none; border-radius: 30px; color: #000; font-weight: 600; margin: 5px;">
+                📁 Browser (Local)
+            </button>
+            <button onclick="uploadViaTelegram()" style="padding:10px 20px; background: #0088cc; border: none; border-radius: 30px; color: #fff; font-weight: 600; margin: 5px;">
+                📱 Telegram (Server)
+            </button>
+            <br><br>
+            <span style="font-size:12px; opacity:0.5;">Browser: store locally • Telegram: store on cloud</span>
+        `;
     });
+
+    // Telegram upload
+    async function uploadViaTelegram() {
+        const input = document.getElementById('fileInput');
+        input.click();
+        input._method = 'telegram';
+    }
 
     // File input change
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = this.files[0];
         if (!file) return;
-        handleFile(file);
+        const method = this._method || 'browser';
+        handleFileUpload(file, method);
         this.value = '';
+        this._method = '';
     });
 
     // Cancel upload
@@ -274,6 +334,8 @@
         document.getElementById('welcomeView').style.display = 'block';
         document.getElementById('previewContainer').innerHTML = '';
         document.getElementById('fileInput').value = '';
+        // Reset upload text
+        document.querySelector('.upload-text').innerHTML = 'Click anywhere to drop video/photo';
     });
 
     // View button
@@ -294,7 +356,7 @@
         }
     });
 
-    // Dev button — check code via prompt
+    // Dev button
     document.getElementById('devBtn').addEventListener('click', function() {
         if (isDevMode) {
             isDevMode = false;
@@ -356,7 +418,7 @@
         this.value = '';
     });
 
-    // Drag and drop
+    // Drag and drop (browser method)
     const uploadArea = document.getElementById('uploadArea');
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
@@ -373,7 +435,8 @@
         this.classList.remove('dragover');
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            handleFile(files[0]);
+            document.getElementById('fileInput').files = files;
+            document.getElementById('fileInput').dispatchEvent(new Event('change'));
         }
     });
 </script>
