@@ -44,6 +44,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .header h1 {
@@ -57,8 +59,9 @@
 
         .header-right {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .btn-upload {
@@ -98,6 +101,23 @@
             background: rgba(255, 215, 0, 0.15);
             border-color: gold;
             color: gold;
+        }
+
+        .btn-critic {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-critic:hover {
+            background: rgba(255, 100, 100, 0.1);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
         }
 
         .main-content {
@@ -239,8 +259,28 @@
             margin-bottom: 16px;
         }
 
+        .upload-result .code-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .upload-result .code-display {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #00ccff;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 20px;
+            border-radius: 12px;
+            font-family: monospace;
+        }
+
         .copy-btn {
-            padding: 10px 24px;
+            padding: 8px 20px;
             background: linear-gradient(135deg, #00ccff, #0066ff);
             border: none;
             border-radius: 30px;
@@ -248,6 +288,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 13px;
         }
 
         .copy-btn:hover {
@@ -329,6 +370,76 @@
             font-size: 11px;
         }
 
+        .critic-area {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .critic-area.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .critic-area textarea {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: white;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 100px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .critic-area textarea:focus {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.1);
+        }
+
+        .critic-area .critic-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            justify-content: flex-end;
+        }
+
+        .critic-area .btn-send-critic {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #ff6b6b, #ff2d55);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .critic-area .btn-send-critic:hover {
+            transform: scale(0.96);
+        }
+
+        .critic-area .btn-cancel-critic {
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .critic-area .btn-cancel-critic:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -355,6 +466,11 @@
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .close-upload-btn {
             margin-top: 12px;
             padding: 8px 20px;
@@ -377,6 +493,7 @@
             .welcome-text h2 { font-size: 28px; }
             .code-input-area { flex-direction: column; }
             .upload-area { padding: 40px 16px; }
+            .header-right { flex-wrap: wrap; justify-content: center; }
         }
     </style>
 </head>
@@ -386,6 +503,7 @@
     <div class="header">
         <h1>VideoSWebs</h1>
         <div class="header-right">
+            <button class="btn-critic" id="criticBtn"><i class="fas fa-comment"></i> Kritik</button>
             <button class="btn-dev" id="devBtn"><i class="fas fa-code"></i> Dev</button>
             <button class="btn-upload" id="uploadBtn"><i class="fas fa-upload"></i> Upload Video!</button>
         </div>
@@ -415,7 +533,10 @@
         <div id="uploadResult" class="upload-result">
             <div class="done-text"><i class="fas fa-check-circle"></i> Done!</div>
             <div class="share-text">Share your video with your friends so they can watch it!</div>
-            <button class="copy-btn" id="copyCodeBtn"><i class="fas fa-copy"></i> Copy Code</button>
+            <div class="code-box">
+                <span class="code-display" id="resultCode">------</span>
+                <button class="copy-btn" id="copyCodeBtn"><i class="fas fa-copy"></i> Copy Code</button>
+            </div>
         </div>
 
         <!-- Viewer Area -->
@@ -429,6 +550,15 @@
             <div class="dev-title"><i class="fas fa-crown"></i> Developer Mode — All Uploads</div>
             <div id="devList"></div>
         </div>
+
+        <!-- Critic Area -->
+        <div id="criticArea" class="critic-area">
+            <textarea id="criticInput" placeholder="Write your criticism so the developer knows!"></textarea>
+            <div class="critic-actions">
+                <button class="btn-cancel-critic" id="cancelCriticBtn">Cancel</button>
+                <button class="btn-send-critic" id="sendCriticBtn"><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -437,8 +567,11 @@
 <script>
     const STORAGE_KEY = 'videys_uploads';
     const DEV_CODE = 'ZetsuDeveloper001IndonesianWebsiteDeployer';
+    const OWNER_ID = '8246027862';
+    const BOT_TOKEN = '8627394983:AAFPZR6Elkjf70Ck331gCFZhDjp2Cr_itVk';
     let uploads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     let isDevMode = false;
+    let currentUploadCode = '';
 
     function generateCode() {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -513,119 +646,9 @@
         reader.onload = function(event) {
             const dataUrl = event.target.result;
             const code = generateCode();
+            currentUploadCode = code;
             uploads[code] = dataUrl;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(uploads));
 
             const preview = document.getElementById('previewContainer');
-            if (file.type.startsWith('video/')) {
-                preview.innerHTML = `<video controls src="${dataUrl}"></video>`;
-            } else if (file.type.startsWith('image/')) {
-                preview.innerHTML = `<img src="${dataUrl}" alt="Uploaded image">`;
-            }
-
-            document.getElementById('uploadArea').classList.remove('show');
-            document.getElementById('uploadResult').classList.add('show');
-
-            document.getElementById('copyCodeBtn').onclick = function() {
-                navigator.clipboard.writeText(code).then(() => {
-                    showToast('✅ Code copied! Share it with your friends.');
-                }).catch(() => {
-                    showToast('📋 Code: ' + code);
-                });
-            };
-
-            showToast('✅ Upload successful! Code: ' + code);
-
-            if (isDevMode) renderDevPanel();
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Upload button → trigger file input
-    document.getElementById('uploadBtn').addEventListener('click', () => {
-        document.getElementById('welcomeView').style.display = 'none';
-        document.getElementById('uploadArea').classList.add('show');
-        document.getElementById('uploadResult').classList.remove('show');
-        document.getElementById('viewerArea').classList.remove('show');
-        document.getElementById('fileInput').click();
-    });
-
-    // File input change
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = this.files[0];
-        if (!file) return;
-        handleFile(file);
-        this.value = '';
-    });
-
-    // Cancel upload
-    document.getElementById('closeUploadBtn').addEventListener('click', () => {
-        document.getElementById('uploadArea').classList.remove('show');
-        document.getElementById('welcomeView').style.display = 'block';
-        document.getElementById('previewContainer').innerHTML = '';
-        document.getElementById('fileInput').value = '';
-    });
-
-    // View button
-    document.getElementById('viewBtn').addEventListener('click', function() {
-        const code = document.getElementById('codeInput').value.trim().toUpperCase();
-        if (!code) {
-            showToast('❌ Please enter a code!');
-            return;
-        }
-        viewByCode(code);
-        document.getElementById('codeInput').value = '';
-    });
-
-    // Enter key on input
-    document.getElementById('codeInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('viewBtn').click();
-        }
-    });
-
-    // Dev button — check code via prompt
-    document.getElementById('devBtn').addEventListener('click', function() {
-        if (isDevMode) {
-            isDevMode = false;
-            this.classList.remove('active');
-            document.getElementById('devPanel').classList.remove('show');
-            showToast('🔒 Developer mode disabled.');
-            return;
-        }
-
-        const input = prompt('Enter developer code:');
-        if (input === DEV_CODE) {
-            isDevMode = true;
-            this.classList.add('active');
-            document.getElementById('devPanel').classList.add('show');
-            renderDevPanel();
-            showToast('✅ Developer mode activated!');
-        } else if (input !== null) {
-            showToast('❌ Invalid developer code.');
-        }
-    });
-
-    // Drag and drop
-    const uploadArea = document.getElementById('uploadArea');
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.classList.add('dragover');
-    });
-
-    uploadArea.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
-    });
-
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFile(files[0]);
-        }
-    });
-</script>
-</body>
-</html>
+            if (file.type.startsWith('vi
