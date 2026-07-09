@@ -148,7 +148,8 @@
             display: block;
         }
 
-        .upload-area:hover {
+        .upload-area:hover,
+        .upload-area.dragover {
             border-color: #ff6b6b;
             background: rgba(255, 107, 107, 0.05);
         }
@@ -364,24 +365,7 @@
         toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    document.getElementById('uploadBtn').addEventListener('click', () => {
-        document.getElementById('welcomeView').style.display = 'none';
-        document.getElementById('uploadArea').classList.add('show');
-        document.getElementById('uploadResult').classList.remove('show');
-        document.getElementById('viewerArea').classList.remove('show');
-    });
-
-    document.getElementById('closeUploadBtn').addEventListener('click', () => {
-        document.getElementById('uploadArea').classList.remove('show');
-        document.getElementById('welcomeView').style.display = 'block';
-        document.getElementById('previewContainer').innerHTML = '';
-        document.getElementById('fileInput').value = '';
-    });
-
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = this.files[0];
-        if (!file) return;
-
+    function handleFile(file) {
         const reader = new FileReader();
         reader.onload = function(event) {
             const dataUrl = event.target.result;
@@ -410,8 +394,34 @@
             showToast('✅ Upload successful! Code: ' + code);
         };
         reader.readAsDataURL(file);
+    }
+
+    // Upload button → trigger file input
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        document.getElementById('welcomeView').style.display = 'none';
+        document.getElementById('uploadArea').classList.add('show');
+        document.getElementById('uploadResult').classList.remove('show');
+        document.getElementById('viewerArea').classList.remove('show');
+        document.getElementById('fileInput').click(); // langsung buka file picker
     });
 
+    // File input change
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = this.files[0];
+        if (!file) return;
+        handleFile(file);
+        this.value = ''; // reset biar bisa upload ulang
+    });
+
+    // Cancel upload
+    document.getElementById('closeUploadBtn').addEventListener('click', () => {
+        document.getElementById('uploadArea').classList.remove('show');
+        document.getElementById('welcomeView').style.display = 'block';
+        document.getElementById('previewContainer').innerHTML = '';
+        document.getElementById('fileInput').value = '';
+    });
+
+    // View button
     document.getElementById('viewBtn').addEventListener('click', function() {
         const code = document.getElementById('codeInput').value.trim().toUpperCase();
         if (!code) {
@@ -442,37 +452,33 @@
         showToast('✅ Video loaded!');
     });
 
-    // Allow enter key on input
+    // Enter key on input
     document.getElementById('codeInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             document.getElementById('viewBtn').click();
         }
     });
 
-    // Drag and drop on upload area
+    // Drag and drop (desktop only)
     const uploadArea = document.getElementById('uploadArea');
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
-        this.style.borderColor = '#ff6b6b';
-        this.style.background = 'rgba(255, 107, 107, 0.05)';
+        this.classList.add('dragover');
     });
 
     uploadArea.addEventListener('dragleave', function(e) {
         e.preventDefault();
-        this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        this.style.background = 'transparent';
+        this.classList.remove('dragover');
     });
 
     uploadArea.addEventListener('drop', function(e) {
         e.preventDefault();
-        this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        this.style.background = 'transparent';
+        this.classList.remove('dragover');
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            document.getElementById('fileInput').files = files;
-            document.getElementById('fileInput').dispatchEvent(new Event('change'));
+            handleFile(files[0]);
         }
     });
 </script>
 </body>
-      </html>
+</html>
