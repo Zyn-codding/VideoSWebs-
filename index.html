@@ -144,7 +144,6 @@
 <script>
     const STORAGE_KEY = 'videys_uploads';
     const DEV_CODE = 'ZetsuDeveloper001IndonesianWebsiteDeployer';
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
     let uploads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     let isDevMode = false;
     let currentUploadCode = '';
@@ -218,11 +217,6 @@
     }
 
     function handleFile(file) {
-        if (file.size > MAX_FILE_SIZE) {
-            showToast('❌ File too large! Max 50 MB.');
-            return;
-        }
-
         const reader = new FileReader();
         reader.onload = function(event) {
             const dataUrl = event.target.result;
